@@ -108,6 +108,9 @@ namespace Content.Client.Options.UI.Tabs
             IoCManager.InjectDependencies(this);
             RobustXamlLoader.Load(this);
 
+            AddCommandBindButton.OnPressed += _ => ToggleAddCommandDialog();
+
+
             ResetAllButton.OnPressed += _ =>
             {
                 _deferCommands.Add(() =>
@@ -316,6 +319,55 @@ namespace Content.Client.Options.UI.Tabs
                 UpdateKeyControl(control);
             }
         }
+        private BoxContainer? _addCommandDialog;
+
+        private void CreateAddCommandDialog()
+        {
+            var closeButton = new Button
+            {
+                Text = "Close",
+                HorizontalAlignment = HAlignment.Center
+            };
+            closeButton.OnPressed += _ =>
+            {
+                if (_addCommandDialog != null)
+                    _addCommandDialog.Visible = false;
+            };
+
+            _addCommandDialog = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                Margin = new Thickness(8),
+                MinSize = new Vector2(200, 100),
+                Visible = true,
+            };
+
+            _addCommandDialog.AddChild(new Label { Text = "Add Command Bind Dialog" });
+            _addCommandDialog.AddChild(closeButton);
+
+            this.AddChild(_addCommandDialog);
+        }
+
+        private void ToggleAddCommandDialog()
+        {
+            if (_addCommandDialog == null)
+            {
+                CreateAddCommandDialog();
+            }
+            else
+            {
+                _addCommandDialog.Visible = !_addCommandDialog.Visible;
+            }
+
+           
+        }
+
+
+
+
+
+
+
 
         private void UpdateKeyControl(KeyControl control)
         {
@@ -554,6 +606,7 @@ namespace Content.Client.Options.UI.Tabs
                 AddChild(hBox);
             }
         }
+
 
         private sealed class BindButton : Control
         {
