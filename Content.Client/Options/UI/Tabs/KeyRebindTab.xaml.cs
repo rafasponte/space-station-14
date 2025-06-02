@@ -326,7 +326,8 @@ namespace Content.Client.Options.UI.Tabs
             var closeButton = new Button
             {
                 Text = "Close",
-                HorizontalAlignment = HAlignment.Center
+                HorizontalAlignment = HAlignment.Center,
+               // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
             };
             closeButton.OnPressed += _ =>
             {
@@ -334,19 +335,42 @@ namespace Content.Client.Options.UI.Tabs
                     _addCommandDialog.Visible = false;
             };
 
-            _addCommandDialog = new BoxContainer
+            var contentBox = new BoxContainer
             {
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
-                MinSize = new Vector2(200, 100),
-                Visible = true,
+                Children =
+        {
+            new Label
+            {
+                Text = "Add Command Bind Dialog",
+                HorizontalAlignment = HAlignment.Center
+            },
+            new Control { MinSize = new Vector2(0, 10) },
+            closeButton
+        }
             };
 
-            _addCommandDialog.AddChild(new Label { Text = "Add Command Bind Dialog" });
-            _addCommandDialog.AddChild(closeButton);
+            var backgroundPanel = new PanelContainer
+            {
+                //StyleClasses = { "WindowBackground" }, // Matches the rest of the UI
+                StyleClasses = { StyleNano.StyleClassBorderedWindowPanel },
+                MinSize = new Vector2(250, 100),
+                Children = { contentBox }
+            };
 
-            this.AddChild(_addCommandDialog);
+            _addCommandDialog = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                HorizontalAlignment = HAlignment.Center,
+                VerticalAlignment = VAlignment.Center,
+                Children = { backgroundPanel },
+                Visible = true
+            };
+
+            AddChild(_addCommandDialog);
         }
+
 
         private void ToggleAddCommandDialog()
         {
