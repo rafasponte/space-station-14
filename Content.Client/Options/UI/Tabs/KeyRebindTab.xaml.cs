@@ -320,19 +320,46 @@ namespace Content.Client.Options.UI.Tabs
             }
         }
         private BoxContainer? _addCommandDialog;
+        private BoxContainer? _addCustomBindDialog;
+        private BoxContainer? _newlyMadeBind;
 
         private void CreateAddCommandDialog()
         {
             var closeButton = new Button
             {
                 Text = "Close",
-                HorizontalAlignment = HAlignment.Center,
-               // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
+                HorizontalAlignment = HAlignment.Left,
+                // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
             };
             closeButton.OnPressed += _ =>
             {
                 if (_addCommandDialog != null)
                     _addCommandDialog.Visible = false;
+            };
+            var newBindButton = new Button
+            {
+                Text = "New Keybind",
+                HorizontalAlignment = HAlignment.Right,
+                // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
+            };
+
+            newBindButton.OnPressed += _ =>
+            {
+                ToggleCustomBindDialog();
+                //backgroundPanel.AddChild(_newlyMadeBind);
+            };
+
+            var closeNewRow = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Horizontal,
+                SeparationOverride = 8,
+                HorizontalExpand = true,
+                Children =
+                {
+                    closeButton, // Left-aligned
+                    new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
+                    newBindButton   // Right-aligned
+                }
             };
 
             var contentBox = new BoxContainer
@@ -340,15 +367,15 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
                 Children =
-        {
-            new Label
-            {
-                Text = "Add Command Bind Dialog",
-                HorizontalAlignment = HAlignment.Center
-            },
-            new Control { MinSize = new Vector2(0, 10) },
-            closeButton
-        }
+                        {
+                            new Label
+                            {
+                                Text = "Add Command Bind Dialog",
+                                HorizontalAlignment = HAlignment.Center
+                            },
+                            new Control { MinSize = new Vector2(0, 10) },
+                            closeNewRow
+                        }
             };
 
             var backgroundPanel = new PanelContainer
@@ -371,6 +398,204 @@ namespace Content.Client.Options.UI.Tabs
             AddChild(_addCommandDialog);
         }
 
+        private void CreateNewBindDialog()
+        {
+            var dropdownExpanded = false;
+
+            var dropdownOptionsContainer = new BoxContainer
+            {
+                Visible = false,
+                SeparationOverride = 6
+            };
+
+            var options = new[] { "Say: ", "Emote: ", "Run Command: " };
+            var dropdownButton = new Button
+            {
+                Text = "Action: ",
+                HorizontalAlignment = HAlignment.Left
+            };
+
+            foreach (var option in options)
+            {
+                if (dropdownButton.Text != option)
+                {
+                    var optionButton = new Button
+                    {
+                        Text = option,
+                        HorizontalAlignment = HAlignment.Left,
+                        //StyleClasses = { StyleNano.StyleClassButtonColorGreen }
+                    };
+                    optionButton.OnPressed += _ =>
+                    {
+                        dropdownButton.Text = option;
+                        dropdownOptionsContainer.Visible = false;
+                        dropdownExpanded = false;
+                    };
+                    dropdownOptionsContainer.AddChild(optionButton);
+                }
+            }
+
+            dropdownButton.OnPressed += _ =>
+            {
+                dropdownExpanded = !dropdownExpanded;
+                dropdownOptionsContainer.Visible = dropdownExpanded;
+            };
+
+            var textButton = new Button
+            {
+                Text = "Text-PlaceHolder",
+                HorizontalAlignment = HAlignment.Center
+            };
+
+            /*
+            var textEntry = new LineEdit
+            {
+                Visible = false,
+                //MaxLength = 30,
+                HorizontalExpand = true
+            };
+
+            var inputRow = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Horizontal,
+                SeparationOverride = 8,
+                Children =
+                {
+                    dropdownButton,
+                    textEntry
+                }
+            };
+            */
+
+            
+            var bindKeyButton = new Button
+            {
+                Text = "Press Key",
+                HorizontalAlignment = HAlignment.Right
+            };
+
+            
+            bindKeyButton.OnPressed += _ =>
+            {
+                /*
+                O q o chat gpt deu como opção para dar bind, n sei se está correto
+
+                var commandName = textEntry.Visible ? textEntry.Text : editTextButton.Text;
+                if (string.IsNullOrWhiteSpace(commandName) || commandName == "Click to Edit")
+                {
+                    Logger.Warning("Invalid command name for binding.");
+                    return;
+                }
+
+                var function = new BoundKeyFunction(commandName);
+                var dummyKeyControl = new KeyControl(this, function);
+
+                // This will allow rebind logic to capture the key press
+                _currentlyRebinding = dummyKeyControl.BindButton1;
+                _currentlyRebinding.Button.Text = Loc.GetString("ui-options-key-prompt");
+
+                // After rebind, we'll hide the dialog inside InputManagerOnFirstChanceOnKeyEvent
+                // So we need to add a hook for that:
+                void HideDialogAfterRebind(KeyEventArgs keyEvent, KeyEventType type)
+                {
+                    if (_currentlyRebinding == null)
+                    {
+                        _inputManager.FirstChanceOnKeyEvent -= HideDialogAfterRebind;
+                        return;
+                    }
+
+                    if (type == KeyEventType.Up)
+                    {
+                        if (_addCustomBindDialog != null)
+                            _addCustomBindDialog.Visible = false;
+
+                        _inputManager.FirstChanceOnKeyEvent -= HideDialogAfterRebind;
+                    }
+                }
+
+                _inputManager.FirstChanceOnKeyEvent += HideDialogAfterRebind;
+                */
+
+                bindKeyButton.Text = "Already Pressed"; //Place Holder
+                if (_addCustomBindDialog != null)
+                {
+                    _addCustomBindDialog.Visible = false;
+                    /*
+                    _newlyMadeBind = new BoxContainer
+                    {
+                        Orientation = LayoutOrientation.Vertical,
+                        Margin = new Thickness(8),
+                        Children =
+                        {
+                            new Label { Text = dropdownButton.Text + textButton.Text, HorizontalAlignment = HAlignment.Left },
+                            new Control { MinSize = new Vector2(0, 20) },
+                            bindKeyButton
+                        }
+                    };
+                    */
+                };
+            };
+
+            var closeButton = new Button
+            {
+                Text = "Close",
+                HorizontalAlignment = HAlignment.Left
+            };
+
+            closeButton.OnPressed += _ =>
+            {
+                if (_addCustomBindDialog != null)
+                    _addCustomBindDialog.Visible = false;
+            };
+
+            var bindRow = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Horizontal,
+                SeparationOverride = 8,
+                HorizontalExpand = true,
+                Children =
+                {
+                    dropdownButton, // Left-aligned
+                    //new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
+                    textButton,  // In the middle
+                    new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
+                    bindKeyButton   // Right-aligned
+                }
+            };
+
+            var container = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                Margin = new Thickness(8),
+                Children =
+                {
+                    new Label { Text = "Create New Bind", HorizontalAlignment = HAlignment.Center },
+                    new Control { MinSize = new Vector2(450, 10) },
+                    bindRow,
+                    dropdownOptionsContainer,
+                    new Control { MinSize = new Vector2(0, 10) },
+                    closeButton
+                }
+            };
+
+            var backgroundPanel = new PanelContainer
+            {
+                StyleClasses = { StyleNano.StyleClassBorderedWindowPanel },
+                MinSize = new Vector2(300, 150),
+                Children = { container }
+            };
+
+            _addCustomBindDialog = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                HorizontalAlignment = HAlignment.Center,
+                VerticalAlignment = VAlignment.Center,
+                Children = { backgroundPanel },
+                Visible = true
+            };
+
+            AddChild(_addCustomBindDialog);
+        }
 
         private void ToggleAddCommandDialog()
         {
@@ -382,16 +607,19 @@ namespace Content.Client.Options.UI.Tabs
             {
                 _addCommandDialog.Visible = !_addCommandDialog.Visible;
             }
-
-           
         }
 
-
-
-
-
-
-
+        private void ToggleCustomBindDialog()
+        {
+            if (_addCustomBindDialog == null)
+            {
+                CreateNewBindDialog();
+            }
+            else
+            {
+                _addCustomBindDialog.Visible = !_addCustomBindDialog.Visible;
+            }
+        }
 
         private void UpdateKeyControl(KeyControl control)
         {
