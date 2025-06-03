@@ -322,6 +322,7 @@ namespace Content.Client.Options.UI.Tabs
         private BoxContainer? _addCommandDialog;
         private BoxContainer? _addCustomBindDialog;
         private BoxContainer? _newlyMadeBind;
+        //private bool _newBindSaved = false;
 
         private void CreateAddCommandDialog()
         {
@@ -362,6 +363,12 @@ namespace Content.Client.Options.UI.Tabs
                 }
             };
 
+            _newlyMadeBind = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                SeparationOverride = 4
+            };
+
             var contentBox = new BoxContainer
             {
                 Orientation = LayoutOrientation.Vertical,
@@ -373,6 +380,7 @@ namespace Content.Client.Options.UI.Tabs
                                 Text = "Add Command Bind Dialog",
                                 HorizontalAlignment = HAlignment.Center
                             },
+                            _newlyMadeBind,
                             new Control { MinSize = new Vector2(0, 10) },
                             closeNewRow
                         }
@@ -417,13 +425,13 @@ namespace Content.Client.Options.UI.Tabs
 
             foreach (var option in options)
             {
+                //Falta fazer desaparecer como opção quando é selecionado
                 if (dropdownButton.Text != option)
                 {
                     var optionButton = new Button
                     {
                         Text = option,
                         HorizontalAlignment = HAlignment.Left,
-                        //StyleClasses = { StyleNano.StyleClassButtonColorGreen }
                     };
                     optionButton.OnPressed += _ =>
                     {
@@ -517,22 +525,30 @@ namespace Content.Client.Options.UI.Tabs
                 */
 
                 bindKeyButton.Text = "Already Pressed"; //Place Holder
-                if (_addCustomBindDialog != null)
+                if (_addCustomBindDialog != null && dropdownButton.Text != "Action: ") //Missing the text entry check
                 {
-                    _addCustomBindDialog.Visible = false;
-                    /*
-                    _newlyMadeBind = new BoxContainer
+                    var labelBind = new Label { Text = dropdownButton.Text + textButton.Text,
+                        HorizontalAlignment = HAlignment.Left };
+                    //Criar um botão q faça o mesmo e tenha o mesmo texto q o q este faz
+                    var bindButton = new Button { Text = "Place Holder", HorizontalAlignment = HAlignment.Right };
+                    BoxContainer? newBindRow = null;
+                    var removeButton = new Button { Text = "Remove", StyleClasses = { StyleBase.ButtonCaution },
+                        HorizontalAlignment = HAlignment.Right };
+                    removeButton.OnPressed += _ =>
                     {
-                        Orientation = LayoutOrientation.Vertical,
-                        Margin = new Thickness(8),
-                        Children =
-                        {
-                            new Label { Text = dropdownButton.Text + textButton.Text, HorizontalAlignment = HAlignment.Left },
-                            new Control { MinSize = new Vector2(0, 20) },
-                            bindKeyButton
-                        }
+                        if (_newlyMadeBind != null && newBindRow != null)
+                            _newlyMadeBind.RemoveChild(newBindRow);
                     };
-                    */
+                    newBindRow = new BoxContainer
+                    {
+                        Orientation = LayoutOrientation.Horizontal,
+                        SeparationOverride = 8,
+                        HorizontalExpand = true,
+                        Children = { labelBind, new Control { HorizontalExpand = true }, bindButton, removeButton}
+                    };
+                    if (_newlyMadeBind != null)
+                        _newlyMadeBind.AddChild(newBindRow);
+                    _addCustomBindDialog.Visible = false;
                 };
             };
 
