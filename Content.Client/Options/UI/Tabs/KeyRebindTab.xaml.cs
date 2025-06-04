@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using Content.Client.Stylesheets;
 using Content.Client.UserInterface.Systems.Chat.Widgets;
@@ -323,45 +324,39 @@ namespace Content.Client.Options.UI.Tabs
         private BoxContainer? _addCommandDialog;
         private BoxContainer? _addCustomBindDialog;
         private BoxContainer? _newlyMadeBind;
-        //private bool _newBindSaved = false;
+        private Keyboard.Key? _lastPressedKey = null;
+        private bool waitingForKeyPress = false;
+        private Button? bindKeyButton; // reference used in OnKeyPressed
+        private LineEdit? _textEntry;
+        private string _actionPrefix = "";
 
+        // Main UI dialog
         private void CreateAddCommandDialog()
         {
             var closeButton = new Button
             {
                 Text = "Close",
-                HorizontalAlignment = HAlignment.Left,
-                // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
+                HorizontalAlignment = HAlignment.Left
             };
             closeButton.OnPressed += _ =>
             {
                 if (_addCommandDialog != null)
                     _addCommandDialog.Visible = false;
             };
+
             var newBindButton = new Button
             {
                 Text = "New Keybind",
-                HorizontalAlignment = HAlignment.Right,
-                // StyleClasses = { StyleBase.ButtonCaution } // Optional: adds visual importance
+                HorizontalAlignment = HAlignment.Right
             };
-
-            newBindButton.OnPressed += _ =>
-            {
-                ToggleCustomBindDialog();
-                //backgroundPanel.AddChild(_newlyMadeBind);
-            };
+            newBindButton.OnPressed += _ => ToggleCustomBindDialog();
 
             var closeNewRow = new BoxContainer
             {
                 Orientation = LayoutOrientation.Horizontal,
                 SeparationOverride = 8,
                 HorizontalExpand = true,
-                Children =
-                {
-                    closeButton, // Left-aligned
-                    new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
-                    newBindButton   // Right-aligned
-                }
+                Children = { closeButton, new Control { HorizontalExpand = true }, newBindButton }
             };
 
             _newlyMadeBind = new BoxContainer
@@ -375,21 +370,16 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
                 Children =
-                        {
-                            new Label
-                            {
-                                Text = "Add Command Bind Dialog",
-                                HorizontalAlignment = HAlignment.Center
-                            },
-                            _newlyMadeBind,
-                            new Control { MinSize = new Vector2(0, 10) },
-                            closeNewRow
-                        }
+        {
+            new Label { Text = "Add Command Bind Dialog", HorizontalAlignment = HAlignment.Center },
+            _newlyMadeBind,
+            new Control { MinSize = new Vector2(0, 10) },
+            closeNewRow
+        }
             };
 
             var backgroundPanel = new PanelContainer
             {
-                //StyleClasses = { "WindowBackground" }, // Matches the rest of the UI
                 StyleClasses = { StyleNano.StyleClassBorderedWindowPanel },
                 MinSize = new Vector2(250, 100),
                 Children = { contentBox }
@@ -426,22 +416,19 @@ namespace Content.Client.Options.UI.Tabs
 
             foreach (var option in options)
             {
-                //Falta fazer desaparecer como opção quando é selecionado
-                if (dropdownButton.Text != option)
+                var optionButton = new Button
                 {
-                    var optionButton = new Button
-                    {
-                        Text = option,
-                        HorizontalAlignment = HAlignment.Left,
-                    };
-                    optionButton.OnPressed += _ =>
-                    {
-                        dropdownButton.Text = option;
-                        dropdownOptionsContainer.Visible = false;
-                        dropdownExpanded = false;
-                    };
-                    dropdownOptionsContainer.AddChild(optionButton);
-                }
+                    Text = option,
+                    HorizontalAlignment = HAlignment.Left
+                };
+                optionButton.OnPressed += _ =>
+                {
+                    dropdownButton.Text = option;
+                    _actionPrefix = option;
+                    dropdownOptionsContainer.Visible = false;
+                    dropdownExpanded = false;
+                };
+                dropdownOptionsContainer.AddChild(optionButton);
             }
 
             dropdownButton.OnPressed += _ =>
@@ -450,99 +437,30 @@ namespace Content.Client.Options.UI.Tabs
                 dropdownOptionsContainer.Visible = dropdownExpanded;
             };
 
-           
-
-
-            var textEntry = new LineEdit
+            _textEntry = new LineEdit
             {
                 Text = "Enter your custom command...",
                 HorizontalExpand = true,
-                StyleClasses = { "chatLineEdit" } // Optional: for visual consistency
+                StyleClasses = { "chatLineEdit" }
             };
 
-
-
-            var bindKeyButton = new Button
+            bindKeyButton = new Button
             {
                 Text = "Press Key",
                 HorizontalAlignment = HAlignment.Right
             };
 
-            
             bindKeyButton.OnPressed += _ =>
             {
-                /*
-                O q o chat gpt deu como opção para dar bind, n sei se está correto
-
-                var commandName = textEntry.Visible ? textEntry.Text : editTextButton.Text;
-                if (string.IsNullOrWhiteSpace(commandName) || commandName == "Click to Edit")
-                {
-                    Logger.Warning("Invalid command name for binding.");
+                if (waitingForKeyPress)
                     return;
-                }
 
-                var function = new BoundKeyFunction(commandName);
-                var dummyKeyControl = new KeyControl(this, function);
+                if (dropdownButton.Text == "Action: " || string.IsNullOrWhiteSpace(_textEntry.Text))
+                    return;
 
-                // This will allow rebind logic to capture the key press
-                _currentlyRebinding = dummyKeyControl.BindButton1;
-                _currentlyRebinding.Button.Text = Loc.GetString("ui-options-key-prompt");
-
-                // After rebind, we'll hide the dialog inside InputManagerOnFirstChanceOnKeyEvent
-                // So we need to add a hook for that:
-                void HideDialogAfterRebind(KeyEventArgs keyEvent, KeyEventType type)
-                {
-                    if (_currentlyRebinding == null)
-                    {
-                        _inputManager.FirstChanceOnKeyEvent -= HideDialogAfterRebind;
-                        return;
-                    }
-
-                    if (type == KeyEventType.Up)
-                    {
-                        if (_addCustomBindDialog != null)
-                            _addCustomBindDialog.Visible = false;
-
-                        _inputManager.FirstChanceOnKeyEvent -= HideDialogAfterRebind;
-                    }
-                }
-
-                _inputManager.FirstChanceOnKeyEvent += HideDialogAfterRebind;
-                */
-
-                bindKeyButton.Text = "Already Pressed"; //Place Holder
-                if (_addCustomBindDialog != null && dropdownButton.Text != "Action: " && !string.IsNullOrWhiteSpace(textEntry.Text))
-                {
-                    var labelBind = new Label { Text = dropdownButton.Text + textEntry.Text,
-                        HorizontalAlignment = HAlignment.Left };
-                    //Criar um botão q faça o mesmo e tenha o mesmo texto q o q este faz
-                    var bindButton = new Button { Text = "Place Holder", HorizontalAlignment = HAlignment.Right };
-
-                    var clonedTextEntry = new LineEdit
-                    {
-                        Text = textEntry.Text,
-                        HorizontalExpand = true,
-                        StyleClasses = { "chatLineEdit" }
-                    };
-                    BoxContainer? newBindRow = null;
-                    var removeButton = new Button { Text = "Remove", StyleClasses = { StyleBase.ButtonCaution },
-                        HorizontalAlignment = HAlignment.Right };
-                    removeButton.OnPressed += _ =>
-                    {
-                        if (_newlyMadeBind != null && newBindRow != null)
-                            _newlyMadeBind.RemoveChild(newBindRow);
-                    };
-                    newBindRow = new BoxContainer
-                    {
-                        Orientation = LayoutOrientation.Horizontal,
-                        SeparationOverride = 8,
-                        HorizontalExpand = true,
-                        Children = { labelBind, clonedTextEntry, new Control { HorizontalExpand = true }, bindButton, removeButton }
-                    };
-                    if (_newlyMadeBind != null)
-                        _newlyMadeBind.AddChild(newBindRow);
-                    _addCustomBindDialog.Visible = false;
-                };
+                waitingForKeyPress = true;
+                bindKeyButton.Text = "Press a key...";
+                _inputManager.FirstChanceOnKeyEvent += OnKeyPressed;
             };
 
             var closeButton = new Button
@@ -550,7 +468,6 @@ namespace Content.Client.Options.UI.Tabs
                 Text = "Close",
                 HorizontalAlignment = HAlignment.Left
             };
-
             closeButton.OnPressed += _ =>
             {
                 if (_addCustomBindDialog != null)
@@ -562,14 +479,7 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Horizontal,
                 SeparationOverride = 8,
                 HorizontalExpand = true,
-                Children =
-                {
-                    dropdownButton, // Left-aligned
-                    //new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
-                    textEntry,  // In the middle
-                    new Control { HorizontalExpand = true }, // Spacer pushes the next element to the right
-                    bindKeyButton   // Right-aligned
-                }
+                Children = { dropdownButton, _textEntry, new Control { HorizontalExpand = true }, bindKeyButton }
             };
 
             var container = new BoxContainer
@@ -577,14 +487,14 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
                 Children =
-                {
-                    new Label { Text = "Create New Bind", HorizontalAlignment = HAlignment.Center },
-                    new Control { MinSize = new Vector2(450, 10) },
-                    bindRow,
-                    dropdownOptionsContainer,
-                    new Control { MinSize = new Vector2(0, 10) },
-                    closeButton
-                }
+        {
+            new Label { Text = "Create New Bind", HorizontalAlignment = HAlignment.Center },
+            new Control { MinSize = new Vector2(450, 10) },
+            bindRow,
+            dropdownOptionsContainer,
+            new Control { MinSize = new Vector2(0, 10) },
+            closeButton
+        }
             };
 
             var backgroundPanel = new PanelContainer
@@ -609,26 +519,139 @@ namespace Content.Client.Options.UI.Tabs
         private void ToggleAddCommandDialog()
         {
             if (_addCommandDialog == null)
-            {
                 CreateAddCommandDialog();
-            }
             else
-            {
                 _addCommandDialog.Visible = !_addCommandDialog.Visible;
-            }
         }
 
         private void ToggleCustomBindDialog()
         {
             if (_addCustomBindDialog == null)
-            {
                 CreateNewBindDialog();
-            }
             else
-            {
                 _addCustomBindDialog.Visible = !_addCustomBindDialog.Visible;
+        }
+
+        private void OnKeyPressed(KeyEventArgs args, KeyEventType type)
+        {
+            if (!waitingForKeyPress || type != KeyEventType.Down)
+                return;
+
+            _inputManager.FirstChanceOnKeyEvent -= OnKeyPressed;
+            waitingForKeyPress = false;
+
+            _lastPressedKey = args.Key;
+
+            if (bindKeyButton != null)
+                bindKeyButton.Text = "Press Key"; // Reset to original state
+
+            if (_lastPressedKey.HasValue && _textEntry != null && !string.IsNullOrWhiteSpace(_textEntry.Text))
+            {
+                var labelBind = new Label
+                {
+                    Text = _actionPrefix + _textEntry.Text,
+                    HorizontalAlignment = HAlignment.Left
+                };
+
+                var bindButton = new Button
+                {
+                    Text = _lastPressedKey.ToString(),
+                    HorizontalAlignment = HAlignment.Right
+                };
+
+                var clonedTextEntry = new LineEdit
+                {
+                    Text = _textEntry.Text,
+                    HorizontalExpand = true,
+                    StyleClasses = { "chatLineEdit" }
+                };
+
+                BoxContainer? newBindRow = null;
+                var removeButton = new Button
+                {
+                    Text = "Remove",
+                    StyleClasses = { StyleBase.ButtonCaution },
+                    HorizontalAlignment = HAlignment.Right
+                };
+                removeButton.OnPressed += _ =>
+                {
+                    if (_newlyMadeBind != null && newBindRow != null)
+                        _newlyMadeBind.RemoveChild(newBindRow);
+                };
+
+                newBindRow = new BoxContainer
+                {
+                    Orientation = LayoutOrientation.Horizontal,
+                    SeparationOverride = 8,
+                    HorizontalExpand = true,
+                    Children = { labelBind, clonedTextEntry, new Control { HorizontalExpand = true }, bindButton, removeButton }
+                };
+
+                _newlyMadeBind?.AddChild(newBindRow);
+                _addCustomBindDialog!.Visible = false;
+
+                // Use AddCustomBinding here
+                AddCustomBinding(CreateBoundFunction(_actionPrefix, _textEntry.Text), _lastPressedKey.ToString() ?? "");
             }
         }
+
+        // Use this to register new bindings to the InputManager
+        private void AddCustomBinding(BoundKeyFunction function, string keyString)
+        {
+            if (string.IsNullOrWhiteSpace(keyString))
+            {
+                Logger.Warning("Key string is empty or null.");
+                return;
+            }
+
+            var parts = keyString.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            Keyboard.Key baseKey = Keyboard.Key.Unknown;
+            var mods = new List<Keyboard.Key>();
+
+            foreach (var part in parts)
+            {
+                var lower = part.ToLowerInvariant();
+                if (lower == "ctrl" || lower == "control") mods.Add(Keyboard.Key.Control);
+                else if (lower == "shift") mods.Add(Keyboard.Key.Shift);
+                else if (lower == "alt") mods.Add(Keyboard.Key.Alt);
+                else if (lower == "win" || lower == "meta" || lower == "system") mods.Add(Keyboard.Key.LSystem);
+                else if (!Keyboard.Key.TryParse(part, out baseKey))
+                {
+                    Logger.Warning($"Invalid key or modifier in key string: {keyString}");
+                    return;
+                }
+            }
+
+            if (baseKey == Keyboard.Key.Unknown)
+            {
+                Logger.Warning($"No base key found in key string: {keyString}");
+                return;
+            }
+
+            var registration = new KeyBindingRegistration
+            {
+                Function = function,
+                BaseKey = baseKey,
+                Mod1 = mods.ElementAtOrDefault(0),
+                Mod2 = mods.ElementAtOrDefault(1),
+                Mod3 = mods.ElementAtOrDefault(2),
+                Type = KeyBindingType.State,
+                Priority = 0,
+                CanFocus = false,
+                CanRepeat = false
+            };
+
+            _inputManager.RegisterBinding(registration);
+            _inputManager.SaveToUserData();
+        }
+
+        // Dummy function generator
+        private BoundKeyFunction CreateBoundFunction(string action, string command)
+        {
+            Logger.Info($"Creating function for action '{action}' and command '{command}'");
+            return EngineKeyFunctions.CameraReset; // Replace with dynamic creation logic if needed
+        }
+
 
         private void UpdateKeyControl(KeyControl control)
         {
