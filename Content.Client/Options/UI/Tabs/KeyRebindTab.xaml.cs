@@ -649,7 +649,7 @@ namespace Content.Client.Options.UI.Tabs
         private BoundKeyFunction CreateBoundFunction(string action, string command)
         {
             Logger.Info($"Creating function for action '{action}' and command '{command}'");
-            return EngineKeyFunctions.CameraReset; // Replace with dynamic creation logic if needed
+            return EngineKeyFunctions.MoveUp; // Replace with dynamic creation logic if needed
         }
 
 
