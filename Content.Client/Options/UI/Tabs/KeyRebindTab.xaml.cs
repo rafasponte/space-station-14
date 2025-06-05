@@ -667,7 +667,7 @@ namespace Content.Client.Options.UI.Tabs
             };
 
             _inputManager.RegisterBinding(registration);
-            _inputManager.SaveToUserData();
+            //_inputManager.SaveToUserData();
         }
 
         // Dummy function generator
@@ -680,8 +680,7 @@ namespace Content.Client.Options.UI.Tabs
             string prefixRun = "Run Command: ";
 
             ChatSelectChannel channel;
-            BoundKeyFunction function = new BoundKeyFunction($"{action}{command}");
-
+            BoundKeyFunction function = new BoundKeyFunction(action);
 
             if (action.StartsWith(prefixSay, StringComparison.OrdinalIgnoreCase))
             {
@@ -691,7 +690,7 @@ namespace Content.Client.Options.UI.Tabs
             else if (action.StartsWith(prefixEmote, StringComparison.OrdinalIgnoreCase))
             {
                 channel = ChatSelectChannel.Emotes;
-               // function = ContentKeyFunctions.CommandEmote;
+                //function = ContentKeyFunctions.CommandEmote;
             }
             else if (action.StartsWith(prefixRun, StringComparison.OrdinalIgnoreCase))
             {
@@ -716,6 +715,8 @@ namespace Content.Client.Options.UI.Tabs
 
             return function;
         }
+
+
 
 
 
