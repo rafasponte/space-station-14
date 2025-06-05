@@ -123,15 +123,34 @@ namespace Content.Client.Options.UI.Tabs
 
             AddCommandBindButton.OnPressed += _ => ToggleAddCommandDialog();
 
-
             ResetAllButton.OnPressed += _ =>
             {
                 _deferCommands.Add(() =>
                 {
+                    // Reset all bindings in the input manager
                     _inputManager.ResetAllBindings();
+
+                    // Clear all custom function handlers
+                    _customFunctionHandlers.Clear();
+
+                    // Clear all used custom command slots
+                    _usedCustomCommandSlots.Clear();
+
+                    // Save changes
                     _inputManager.SaveToUserData();
                 });
+
+                // Also update UI immediately: remove all key control UI rows from _newlyMadeBind container (if applicable)
+                if (_newlyMadeBind != null)
+                {
+                    // Remove all children (all keybind rows)
+                    for (int i = _newlyMadeBind.ChildCount - 1; i >= 0; i--)
+                    {
+                        _newlyMadeBind.RemoveChild(_newlyMadeBind.GetChild(i));
+                    }
+                }
             };
+
 
             var first = true;
 
@@ -336,8 +355,8 @@ namespace Content.Client.Options.UI.Tabs
         private BoxContainer? _addCustomBindDialog;
         private BoxContainer? _newlyMadeBind;
         private Keyboard.Key? _lastPressedKey = null;
-        private bool waitingForKeyPress = false;
-        private Button? bindKeyButton; // reference used in OnKeyPressed
+        private bool _waitingForKeyPress = false;
+        private Button? _bindKeyButton; // reference used in OnKeyPressed
         private LineEdit? _textEntry;
         private string _actionPrefix = "";
 
@@ -460,22 +479,22 @@ namespace Content.Client.Options.UI.Tabs
                 StyleClasses = { "chatLineEdit" }
             };
 
-            bindKeyButton = new Button
+            _bindKeyButton = new Button
             {
                 Text = "Press Key",
                 HorizontalAlignment = HAlignment.Right
             };
 
-            bindKeyButton.OnPressed += _ =>
+            _bindKeyButton.OnPressed += _ =>
             {
-                if (waitingForKeyPress)
+                if (_waitingForKeyPress)
                     return;
 
                 if (dropdownButton.Text == "Action: " || string.IsNullOrWhiteSpace(_textEntry.Text))
                     return;
 
-                waitingForKeyPress = true;
-                bindKeyButton.Text = "Press a key...";
+                _waitingForKeyPress = true;
+                _bindKeyButton.Text = "Press a key...";
                 _inputManager.FirstChanceOnKeyEvent += OnKeyPressed;
             };
 
@@ -497,7 +516,7 @@ namespace Content.Client.Options.UI.Tabs
                 SeparationOverride = 8,
                 HorizontalExpand = true,
                 Children = { dropdownButton, _textEntry,
-                    new Control { HorizontalExpand = true, MouseFilter = MouseFilterMode.Stop }, bindKeyButton }
+                    new Control { HorizontalExpand = true, MouseFilter = MouseFilterMode.Stop }, _bindKeyButton }
             };
 
             var container = new BoxContainer
@@ -555,16 +574,16 @@ namespace Content.Client.Options.UI.Tabs
 
         private void OnKeyPressed(KeyEventArgs args, KeyEventType type)
         {
-            if (!waitingForKeyPress || type != KeyEventType.Down)
+            if (!_waitingForKeyPress || type != KeyEventType.Down)
                 return;
 
             _inputManager.FirstChanceOnKeyEvent -= OnKeyPressed;
-            waitingForKeyPress = false;
+            _waitingForKeyPress = false;
 
             _lastPressedKey = args.Key;
 
-            if (bindKeyButton != null)
-                bindKeyButton.Text = "Press Key"; // Reset to original state
+            if (_bindKeyButton != null)
+                _bindKeyButton.Text = "Press Key"; // Reset to original state
 
             if (_lastPressedKey.HasValue && _textEntry != null && !string.IsNullOrWhiteSpace(_textEntry.Text))
             {
