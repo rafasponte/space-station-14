@@ -367,7 +367,8 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Horizontal,
                 SeparationOverride = 8,
                 HorizontalExpand = true,
-                Children = { closeButton, new Control { HorizontalExpand = true }, newBindButton }
+                Children = { closeButton,
+                    new Control { HorizontalExpand = true, MouseFilter = MouseFilterMode.Stop }, newBindButton }
             };
 
             _newlyMadeBind = new BoxContainer
@@ -378,26 +379,29 @@ namespace Content.Client.Options.UI.Tabs
 
             var contentBox = new BoxContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
                 Children =
-        {
-            new Label { Text = "Add Command Bind Dialog", HorizontalAlignment = HAlignment.Center },
-            _newlyMadeBind,
-            new Control { MinSize = new Vector2(0, 10) },
-            closeNewRow
-        }
+                {
+                    new Label { Text = "Add Command Bind Dialog", HorizontalAlignment = HAlignment.Center },
+                    _newlyMadeBind,
+                    new Control { MinSize = new Vector2(0, 10) },
+                    closeNewRow
+                }
             };
 
             var backgroundPanel = new PanelContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 StyleClasses = { StyleNano.StyleClassBorderedWindowPanel },
-                MinSize = new Vector2(250, 100),
+                MinSize = new Vector2(700, 350),
                 Children = { contentBox }
             };
 
             _addCommandDialog = new BoxContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 Orientation = LayoutOrientation.Vertical,
                 HorizontalAlignment = HAlignment.Center,
                 VerticalAlignment = VAlignment.Center,
@@ -450,6 +454,7 @@ namespace Content.Client.Options.UI.Tabs
 
             _textEntry = new LineEdit
             {
+                MinSize = new Vector2(400, 10),
                 Text = "Enter your custom command...",
                 HorizontalExpand = true,
                 StyleClasses = { "chatLineEdit" }
@@ -479,6 +484,7 @@ namespace Content.Client.Options.UI.Tabs
                 Text = "Close",
                 HorizontalAlignment = HAlignment.Left
             };
+            
             closeButton.OnPressed += _ =>
             {
                 if (_addCustomBindDialog != null)
@@ -490,33 +496,37 @@ namespace Content.Client.Options.UI.Tabs
                 Orientation = LayoutOrientation.Horizontal,
                 SeparationOverride = 8,
                 HorizontalExpand = true,
-                Children = { dropdownButton, _textEntry, new Control { HorizontalExpand = true }, bindKeyButton }
+                Children = { dropdownButton, _textEntry,
+                    new Control { HorizontalExpand = true, MouseFilter = MouseFilterMode.Stop }, bindKeyButton }
             };
 
             var container = new BoxContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 Orientation = LayoutOrientation.Vertical,
                 Margin = new Thickness(8),
                 Children =
-        {
-            new Label { Text = "Create New Bind", HorizontalAlignment = HAlignment.Center },
-            new Control { MinSize = new Vector2(450, 10) },
-            bindRow,
-            dropdownOptionsContainer,
-            new Control { MinSize = new Vector2(0, 10) },
-            closeButton
-        }
+                {
+                    new Label { Text = "Create New Bind", HorizontalAlignment = HAlignment.Center },
+                    new Control { MinSize = new Vector2(450, 10) },
+                    bindRow,
+                    dropdownOptionsContainer,
+                    new Control { MinSize = new Vector2(0, 10) },
+                    closeButton
+                }
             };
 
             var backgroundPanel = new PanelContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 StyleClasses = { StyleNano.StyleClassBorderedWindowPanel },
-                MinSize = new Vector2(300, 150),
+                MinSize = new Vector2(600, 100),
                 Children = { container }
             };
 
             _addCustomBindDialog = new BoxContainer
             {
+                MouseFilter = MouseFilterMode.Stop,
                 Orientation = LayoutOrientation.Vertical,
                 HorizontalAlignment = HAlignment.Center,
                 VerticalAlignment = VAlignment.Center,
