@@ -43,6 +43,8 @@ namespace Content.Client.Options.UI.Tabs
             new();
 
         private readonly Dictionary<BoundKeyFunction, Action> _customFunctionHandlers = new();
+        private readonly HashSet<int> _usedCustomCommandSlots = new();
+
 
 
         private readonly List<Action> _deferCommands = new();
@@ -574,15 +576,18 @@ namespace Content.Client.Options.UI.Tabs
                 // Call the handler on button press
                 bindButton.OnPressed += _ =>
                 {
+                    //var key = (boundFunction, _textEntry.Text);
+
                     if (_customFunctionHandlers.TryGetValue(boundFunction, out var handler))
                     {
                         handler.Invoke();
                     }
                     else
                     {
-                        Logger.Warning("No handler found for this bound function.");
+                        Logger.Warning("No handler found for this bound function and command.");
                     }
                 };
+
 
                 var clonedTextEntry = new LineEdit
                 {
@@ -667,7 +672,7 @@ namespace Content.Client.Options.UI.Tabs
             };
 
             _inputManager.RegisterBinding(registration);
-            //_inputManager.SaveToUserData();
+            _inputManager.SaveToUserData();
         }
 
         // Dummy function generator
@@ -675,27 +680,23 @@ namespace Content.Client.Options.UI.Tabs
         {
             Logger.Info($"Creating function for action '{action}' and command '{command}'");
 
-            string prefixSay = "Say: ";
-            string prefixEmote = "Emote: ";
-            string prefixRun = "Run Command: ";
+            const string prefixSay = "Say: ";
+            const string prefixEmote = "Emote: ";
+            const string prefixRun = "Run Command: ";
 
             ChatSelectChannel channel;
-            BoundKeyFunction function = new BoundKeyFunction(action);
 
             if (action.StartsWith(prefixSay, StringComparison.OrdinalIgnoreCase))
             {
                 channel = ChatSelectChannel.Local;
-                //function = ContentKeyFunctions.CommandSay;
             }
             else if (action.StartsWith(prefixEmote, StringComparison.OrdinalIgnoreCase))
             {
                 channel = ChatSelectChannel.Emotes;
-                //function = ContentKeyFunctions.CommandEmote;
             }
             else if (action.StartsWith(prefixRun, StringComparison.OrdinalIgnoreCase))
             {
                 channel = ChatSelectChannel.Console;
-                //function = ContentKeyFunctions.CommandCommand;
             }
             else
             {
@@ -703,18 +704,42 @@ namespace Content.Client.Options.UI.Tabs
                 return null!;
             }
 
-            // Store a handler for this function
-            _customFunctionHandlers[function] = () =>
+            // Find the first unused predefined custom command slot
+            for (int i = 0; i <= 9; i++)
             {
-                var chatManager = IoCManager.Resolve<IChatManager>();
-                chatManager.SendMessage(command, channel);
-            };
+                if (_usedCustomCommandSlots.Contains(i))
+                    continue;
 
-            // Bind the function to the input command only ONCE here
-            _inputManager.SetInputCommand(function, InputCmdHandler.FromDelegate(_ => _customFunctionHandlers[function]?.Invoke()));
+                // Marcar o slot como usado
+                _usedCustomCommandSlots.Add(i);
 
-            return function;
+                var function = ContentKeyFunctions.GetCustomCommandKeys()[i];
+                Logger.Info($"Binding to CustomCommand{i}");
+
+                // Armazenar o handler
+                _customFunctionHandlers[function] = () =>
+                {
+                    var chatManager = IoCManager.Resolve<IChatManager>();
+                    chatManager.SendMessage(command, channel);
+                };
+
+                // Vincular a função no input manager
+                _inputManager.SetInputCommand(
+                    function,
+                    InputCmdHandler.FromDelegate(_ => _customFunctionHandlers[function]?.Invoke())
+                );
+
+                return function;
+            }
+
+            // Se nenhum slot estiver disponível
+            Logger.Error("No available custom command slots (0–9)");
+            return null!;
         }
+
+
+
+
 
 
 

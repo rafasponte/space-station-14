@@ -129,6 +129,11 @@ namespace Content.Client.Input
             common.AddFunction(ContentKeyFunctions.OpenDecalSpawnWindow);
             common.AddFunction(ContentKeyFunctions.OpenAdminMenu);
             common.AddFunction(ContentKeyFunctions.OpenGuidebook);
+
+            foreach (var customFunction in ContentKeyFunctions.GetCustomCommandKeys())
+            {
+                common.AddFunction(customFunction);
+            }
         }
     }
 }
