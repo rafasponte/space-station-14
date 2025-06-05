@@ -602,22 +602,6 @@ namespace Content.Client.Options.UI.Tabs
                     HorizontalAlignment = HAlignment.Right
                 };
 
-                // Call the handler on button press
-                bindButton.OnPressed += _ =>
-                {
-                    //var key = (boundFunction, _textEntry.Text);
-
-                    if (_customFunctionHandlers.TryGetValue(boundFunction, out var handler))
-                    {
-                        handler.Invoke();
-                    }
-                    else
-                    {
-                        Logger.Warning("No handler found for this bound function and command.");
-                    }
-                };
-
-
                 var clonedTextEntry = new LineEdit
                 {
                     Text = _textEntry.Text,
@@ -676,8 +660,18 @@ namespace Content.Client.Options.UI.Tabs
                 _newlyMadeBind?.AddChild(newBindRow);
                 _addCustomBindDialog!.Visible = false;
 
+                var keyParts = new List<string>();
+               if (args.Control) keyParts.Add("Ctrl");
+               if (args.Shift) keyParts.Add("Shift");
+               if (args.Alt) keyParts.Add("Alt");
+
+                keyParts.Add(args.Key.ToString());
+
+                var keyString = string.Join('+', keyParts);
+                AddCustomBinding(boundFunction, keyString);
+
                 // Register binding to input manager
-                AddCustomBinding(boundFunction, _lastPressedKey.ToString() ?? "");
+                // AddCustomBinding(boundFunction, _lastPressedKey.ToString() ?? "");
             }
         }
 
@@ -700,7 +694,7 @@ namespace Content.Client.Options.UI.Tabs
                 if (lower == "ctrl" || lower == "control") mods.Add(Keyboard.Key.Control);
                 else if (lower == "shift") mods.Add(Keyboard.Key.Shift);
                 else if (lower == "alt") mods.Add(Keyboard.Key.Alt);
-                else if (lower == "win" || lower == "meta" || lower == "system") mods.Add(Keyboard.Key.LSystem);
+                else if (lower == "win" || lower == "system") mods.Add(Keyboard.Key.LSystem);
                 else if (!Keyboard.Key.TryParse(part, out baseKey))
                 {
                     Logger.Warning($"Invalid key or modifier in key string: {keyString}");
@@ -731,7 +725,6 @@ namespace Content.Client.Options.UI.Tabs
             _inputManager.SaveToUserData();
         }
 
-        // Dummy function generator
         private BoundKeyFunction CreateBoundFunction(string action, string command)
         {
             Logger.Info($"Creating function for action '{action}' and command '{command}'");
