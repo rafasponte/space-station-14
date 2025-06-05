@@ -606,8 +606,35 @@ namespace Content.Client.Options.UI.Tabs
                 removeButton.OnPressed += _ =>
                 {
                     if (_newlyMadeBind != null && newBindRow != null)
+                    {
                         _newlyMadeBind.RemoveChild(newBindRow);
+                    }
+
+                    // Defer removing function handler, key binding, and freeing slot to avoid modifying collections during enumeration
+                    _deferCommands.Add(() =>
+                    {
+                        if (_customFunctionHandlers.ContainsKey(boundFunction))
+                        {
+                            _customFunctionHandlers.Remove(boundFunction);
+                        }
+
+                        var binding = _inputManager.GetKeyBinding(boundFunction);
+                        if (binding != null)
+                        {
+                            _inputManager.RemoveBinding(binding);
+                            _inputManager.SaveToUserData();
+                        }
+
+                        var customKeys = ContentKeyFunctions.GetCustomCommandKeys();
+                        var index = Array.IndexOf(customKeys, boundFunction);
+                        if (index >= 0)
+                        {
+                            _usedCustomCommandSlots.Remove(index);
+                        }
+                    });
                 };
+
+
 
                 newBindRow = new BoxContainer
                 {
