@@ -356,11 +356,11 @@ namespace Content.Client.Options.UI.Tabs
         private BoxContainer? _newlyMadeBind;
         private Keyboard.Key? _lastPressedKey = null;
         private bool _waitingForKeyPress = false;
-        private Button? _bindKeyButton; // reference used in OnKeyPressed
+        private Button? _bindKeyButton;
         private LineEdit? _textEntry;
         private string _actionPrefix = "";
 
-        // Main UI dialog
+        // Main Custom command UI dialog
         private void CreateAddCommandDialog()
         {
             var closeButton = new Button
@@ -430,7 +430,8 @@ namespace Content.Client.Options.UI.Tabs
 
             AddChild(_addCommandDialog);
         }
-
+        
+        //Dialog for the addition of a new custom keybind
         private void CreateNewBindDialog()
         {
             var dropdownExpanded = false;
@@ -503,7 +504,7 @@ namespace Content.Client.Options.UI.Tabs
                 Text = "Close",
                 HorizontalAlignment = HAlignment.Left
             };
-            
+
             closeButton.OnPressed += _ =>
             {
                 if (_addCustomBindDialog != null)
@@ -556,6 +557,7 @@ namespace Content.Client.Options.UI.Tabs
             AddChild(_addCustomBindDialog);
         }
 
+        //Turn visible the custom keybinds window
         private void ToggleAddCommandDialog()
         {
             if (_addCommandDialog == null)
@@ -564,6 +566,7 @@ namespace Content.Client.Options.UI.Tabs
                 _addCommandDialog.Visible = !_addCommandDialog.Visible;
         }
 
+        //Turn visible the window to add a new custom keybinds
         private void ToggleCustomBindDialog()
         {
             if (_addCustomBindDialog == null)
@@ -593,7 +596,6 @@ namespace Content.Client.Options.UI.Tabs
                     HorizontalAlignment = HAlignment.Left
                 };
 
-                // Create the bound function here
                 var boundFunction = CreateBoundFunction(_actionPrefix, _textEntry.Text);
 
                 var bindButton = new Button
@@ -623,7 +625,6 @@ namespace Content.Client.Options.UI.Tabs
                         _newlyMadeBind.RemoveChild(newBindRow);
                     }
 
-                    // Defer removing function handler, key binding, and freeing slot to avoid modifying collections during enumeration
                     _deferCommands.Add(() =>
                     {
                         if (_customFunctionHandlers.ContainsKey(boundFunction))
@@ -669,13 +670,9 @@ namespace Content.Client.Options.UI.Tabs
 
                 var keyString = string.Join('+', keyParts);
                 AddCustomBinding(boundFunction, keyString);
-
-                // Register binding to input manager
-                // AddCustomBinding(boundFunction, _lastPressedKey.ToString() ?? "");
             }
         }
 
-        // Use this to register new bindings to the InputManager
         private void AddCustomBinding(BoundKeyFunction function, string keyString)
         {
             if (string.IsNullOrWhiteSpace(keyString))
@@ -753,26 +750,24 @@ namespace Content.Client.Options.UI.Tabs
                 return null!;
             }
 
-            // Find the first unused predefined custom command slot
             for (int i = 0; i <= 9; i++)
             {
                 if (_usedCustomCommandSlots.Contains(i))
                     continue;
 
-                // Marcar o slot como usado
+                // Mark the slot as used
                 _usedCustomCommandSlots.Add(i);
 
                 var function = ContentKeyFunctions.GetCustomCommandKeys()[i];
                 Logger.Info($"Binding to CustomCommand{i}");
 
-                // Armazenar o handler
+                // Store the handler
                 _customFunctionHandlers[function] = () =>
                 {
                     var chatManager = IoCManager.Resolve<IChatManager>();
                     chatManager.SendMessage(command, channel);
                 };
 
-                // Vincular a função no input manager
                 _inputManager.SetInputCommand(
                     function,
                     InputCmdHandler.FromDelegate(_ => _customFunctionHandlers[function]?.Invoke())
@@ -781,23 +776,9 @@ namespace Content.Client.Options.UI.Tabs
                 return function;
             }
 
-            // Se nenhum slot estiver disponível
             Logger.Error("No available custom command slots (0–9)");
             return null!;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         private void UpdateKeyControl(KeyControl control)
         {
