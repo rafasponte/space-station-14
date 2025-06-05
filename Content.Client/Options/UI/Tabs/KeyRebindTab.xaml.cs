@@ -673,37 +673,51 @@ namespace Content.Client.Options.UI.Tabs
         // Dummy function generator
         private BoundKeyFunction CreateBoundFunction(string action, string command)
         {
-            // Create a new BoundKeyFunction using the full action string as the function name
-            var function = new BoundKeyFunction(action);
+            Logger.Info($"Creating function for action '{action}' and command '{command}'");
 
-            // The message is the actual command text entered by the user, no substring extraction needed.
-            string message = command;
+            string prefixSay = "Say: ";
+            string prefixEmote = "Emote: ";
+            string prefixRun = "Run Command: ";
 
-            // Store the handler associated with this function
+            ChatSelectChannel channel;
+            BoundKeyFunction function = new BoundKeyFunction($"{action}{command}");
+
+
+            if (action.StartsWith(prefixSay, StringComparison.OrdinalIgnoreCase))
+            {
+                channel = ChatSelectChannel.Local;
+                //function = ContentKeyFunctions.CommandSay;
+            }
+            else if (action.StartsWith(prefixEmote, StringComparison.OrdinalIgnoreCase))
+            {
+                channel = ChatSelectChannel.Emotes;
+               // function = ContentKeyFunctions.CommandEmote;
+            }
+            else if (action.StartsWith(prefixRun, StringComparison.OrdinalIgnoreCase))
+            {
+                channel = ChatSelectChannel.Console;
+                //function = ContentKeyFunctions.CommandCommand;
+            }
+            else
+            {
+                Logger.Warning($"Unknown action type: {action}");
+                return null!;
+            }
+
+            // Store a handler for this function
             _customFunctionHandlers[function] = () =>
             {
                 var chatManager = IoCManager.Resolve<IChatManager>();
-
-                string prefixSay = "Say: ";
-                string prefixEmote = "Emote: ";
-                string prefixRun = "Run Command: ";
-
-                if (action.StartsWith(prefixSay, StringComparison.OrdinalIgnoreCase))
-                {
-                    chatManager.SendMessage(message, ChatSelectChannel.Local);
-                }
-                else if (action.StartsWith(prefixEmote, StringComparison.OrdinalIgnoreCase))
-                {
-                    chatManager.SendMessage(message, ChatSelectChannel.Emotes);
-                }
-                else if (action.StartsWith(prefixRun, StringComparison.OrdinalIgnoreCase))
-                {
-                    chatManager.SendMessage(message, ChatSelectChannel.Console);
-                }
+                chatManager.SendMessage(command, channel);
             };
+
+            // Bind the function to the input command only ONCE here
+            _inputManager.SetInputCommand(function, InputCmdHandler.FromDelegate(_ => _customFunctionHandlers[function]?.Invoke()));
 
             return function;
         }
+
+
 
 
 
